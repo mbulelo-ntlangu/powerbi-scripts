@@ -35,9 +35,6 @@ ENV/
 
 # Generated files
 *.csv
-!farms.csv
-!fields.csv
-!all_fields.csv
 
 # Logs
 *.log

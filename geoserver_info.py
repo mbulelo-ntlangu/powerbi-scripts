@@ -17,6 +17,34 @@ class GeoServerInfo:
         self.auth = auth_client if auth_client else TerraCLIMAuth()
         if not self.auth.is_authenticated():
             raise ValueError("Authentication required. Please login first.")
+            
+    def get_workspaces(self):
+        """
+        Retrieve list of available GeoServer workspaces.
+        
+        Returns:
+            pandas.DataFrame: Available workspaces data with descriptions
+        """
+        endpoint = "geoserver-info/workspaces/"
+        url = get_api_url(endpoint)
+        
+        try:
+            response = requests.get(
+                url,
+                headers=self.auth.get_headers()
+            )
+            
+            success, error_msg = handle_error_response(response)
+            if not success:
+                print(f"Error getting workspaces: {error_msg}")
+                return None
+                
+            data = response.json()
+            return response_to_dataframe(data)
+            
+        except requests.exceptions.RequestException as e:
+            print(f"Failed to retrieve workspaces: {str(e)}")
+            return None
 
     def get_info(self, workspace):
         """
@@ -94,17 +122,19 @@ Basic Usage:
     python geoserver_info.py [command] [options]
 
 Commands:
+    workspaces            List all available GeoServer workspaces
     info                   Get general GeoServer information
     layer [layer_name]     Get information about a specific layer
     help                   Show this help message
 
-Required options for all commands:
+Required options for info and layer commands:
     --workspace NAME      GeoServer workspace name
 
 Optional options:
-    --output FILE        Output CSV filename (default: geoserver_info.csv or layer_[name]_info.csv)
+    --output FILE        Output CSV filename (default: workspaces.csv, geoserver_info.csv, or layer_[name]_info.csv)
 
 Examples:
+    python geoserver_info.py workspaces
     python geoserver_info.py info --workspace terraclim
     python geoserver_info.py layer climate_layer --workspace terraclim
     python geoserver_info.py info --workspace terraclim --output custom_info.csv
@@ -133,7 +163,19 @@ def main():
     command = sys.argv[1]
 
     try:
-        if command == 'info':
+        if command == 'workspaces':
+            print("\nFetching available GeoServer workspaces...")
+            df = client.get_workspaces()
+            
+            if df is not None:
+                print("\nAvailable GeoServer Workspaces:")
+                print(df)
+                
+                output_file = "workspaces.csv"
+                df.to_csv(output_file, index=False)
+                print(f"\nWorkspaces list saved to {output_file}")
+                
+        elif command == 'info':
             # Parse command options
             workspace = None
             output_file = "geoserver_info.csv"

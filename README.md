@@ -336,15 +336,21 @@ python geoserver_info.py layer <layer_name> --workspace <workspace_name>
 
 ### Example 1: Basic Field Analysis
 
-```bash
+```python
 # Login to the API
-python auth.py login
+auth = TerraCLIMAuth()
+auth.login()
 
-# Get list of fields
-python fields.py list
+# Initialize analysis stats
+analysis = AnalysisStats(auth)
 
-# Get statistics for specific fields
-python analysis_stats.py get --fields 1,2,3 --start-date 2025-01-01 --end-date 2025-12-31
+# Get statistics for a specific field
+# Note: field_ids must be a single integer
+stats_df = analysis.get_analysis_stats(field_ids=478)
+
+# Get overview stats for the same field
+overview = OverviewStats(auth)
+overview_df = overview.get_overview_stats(field_id=478)
 ```
 
 ### Example 2: Climate Data Analysis

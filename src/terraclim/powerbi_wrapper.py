@@ -5,8 +5,23 @@ These functions are designed to be called directly from Power BI's Python script
 
 import os
 import sys
+import logging
 import pandas as pd
+import requests
 from pathlib import Path
+from typing import Optional, Dict, Any, Union
+from datetime import datetime
+
+# Configure logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(os.path.join(os.getenv('TEMP', ''), 'terraclim_powerbi.log')),
+        logging.StreamHandler()
+    ]
+)
+logger = logging.getLogger('terraclim_powerbi')
 
 # Add package directory to Python path if needed
 package_dir = Path(__file__).parent.parent
@@ -19,7 +34,60 @@ from fields import FieldInfo
 from farms import FarmInfo
 from field_notes import FieldNotes
 
-def get_workspaces(username=None, password=None):
+class TerraCLIMError(Exception):
+    """Base exception for TerraCLIM errors"""
+    pass
+
+class AuthenticationError(TerraCLIMError):
+    """Raised when authentication fails"""
+    pass
+
+class APIError(TerraCLIMError):
+    """Raised when API calls fail"""
+    pass
+
+class DataValidationError(TerraCLIMError):
+    """Raised when data validation fails"""
+    pass
+
+def handle_api_error(func):
+    """Decorator to handle API errors and return appropriate DataFrames"""
+    def wrapper(*args, **kwargs):
+        try:
+            return func(*args, **kwargs)
+        except AuthenticationError as e:
+            logger.error(f"Authentication failed: {str(e)}")
+            return pd.DataFrame({'error': ['Authentication failed. Please check your credentials.']})
+        except APIError as e:
+            logger.error(f"API error: {str(e)}")
+            return pd.DataFrame({'error': [f'API Error: {str(e)}']})
+        except requests.exceptions.RequestException as e:
+            logger.error(f"Network error: {str(e)}")
+            return pd.DataFrame({'error': ['Network error. Please check your internet connection.']})
+        except Exception as e:
+            logger.error(f"Unexpected error in {func.__name__}: {str(e)}")
+            return pd.DataFrame({'error': [f'Unexpected error: {str(e)}']})
+    return wrapper
+
+def validate_dataframe(df: pd.DataFrame, required_columns: list) -> None:
+    """Validate DataFrame has required columns and is not empty"""
+    if df.empty:
+        raise DataValidationError("No data returned from API")
+    missing_cols = [col for col in required_columns if col not in df.columns]
+    if missing_cols:
+        raise DataValidationError(f"Missing required columns: {', '.join(missing_cols)}")
+
+def get_version_info() -> Dict[str, str]:
+    """Get version information for troubleshooting"""
+    return {
+        'terraclim_version': getattr(sys.modules[__package__], '__version__', 'unknown'),
+        'python_version': sys.version,
+        'pandas_version': pd.__version__,
+        'timestamp': datetime.now().isoformat()
+    }
+
+@handle_api_error
+def get_workspaces(username: Optional[str] = None, password: Optional[str] = None) -> pd.DataFrame:
     """
     Get all available GeoServer workspaces.
     
@@ -28,14 +96,28 @@ def get_workspaces(username=None, password=None):
         password (str, optional): TerraCLIM password
         
     Returns:
-        pandas.DataFrame: Workspaces information
+        pandas.DataFrame: Workspaces information with columns ['name', 'description']
+        
+    Raises:
+        AuthenticationError: If login fails
+        APIError: If API request fails
     """
+    logger.info("Retrieving GeoServer workspaces")
     auth_client = TerraCLIMAuth()
+    
     if not auth_client.login(username, password):
-        return pd.DataFrame()
+        raise AuthenticationError("Failed to authenticate with provided credentials")
         
     client = GeoServerInfo(auth_client)
-    return client.get_workspaces()
+    df = client.get_workspaces()
+    
+    try:
+        validate_dataframe(df, ['name'])
+        logger.info(f"Successfully retrieved {len(df)} workspaces")
+        return df
+    except DataValidationError as e:
+        logger.error(f"Data validation error: {str(e)}")
+        raise APIError(f"Invalid workspace data returned: {str(e)}")
 
 def get_fields(username=None, password=None):
     """

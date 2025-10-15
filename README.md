@@ -4,6 +4,12 @@ A collection of Python scripts for retrieving and processing data from the Terra
 
 ## Table of Contents
 
+- [Power BI Integration Guide](#power-bi-integration-guide)
+  - [Prerequisites](#prerequisites)
+  - [Installation Steps](#installation-steps)
+  - [Setting up Power BI](#setting-up-power-bi)
+  - [Creating Your First Report](#creating-your-first-report)
+  - [Troubleshooting](#troubleshooting)
 - [Installation](#installation)
 - [Configuration](#configuration)
 - [Available Scripts](#available-scripts)
@@ -14,6 +20,154 @@ A collection of Python scripts for retrieving and processing data from the Terra
   - [Climate Data](#climate-data)
   - [GeoServer Integration](#geoserver-integration)
 - [Usage Examples](#usage-examples)
+
+## Power BI Integration Guide
+
+### Prerequisites
+
+Before you begin, ensure you have:
+- Power BI Desktop installed (latest version)
+- Python 3.7 or higher
+- TerraCLIM account credentials
+- Internet connection
+- Administrator access to your machine
+
+### Installation Steps
+
+1. **Set up Python Environment**:
+   ```powershell
+   # Create a dedicated directory
+   mkdir C:\TerraCLIM
+   cd C:\TerraCLIM
+
+   # Create virtual environment
+   python -m venv .venv
+   .\.venv\Scripts\Activate.ps1
+
+   # Clone and install package
+   git clone https://github.com/mbulelo-ntlangu/powerbi-scripts.git
+   cd powerbi-scripts
+   pip install -e .
+   ```
+
+2. **Verify Installation**:
+   ```python
+   python -c "import terraclim; print(terraclim.__version__)"
+   ```
+
+### Setting up Power BI
+
+1. **Configure Python in Power BI**:
+   - Open Power BI Desktop
+   - Go to File → Options and settings → Options
+   - Navigate to Global → Python scripting
+   - Set Python home directory to your virtual environment:
+     ```
+     C:\TerraCLIM\.venv
+     ```
+
+2. **Create Parameters**:
+   - File → Options and settings → Parameters
+   - Add two parameters:
+     1. TERRACLIM_USERNAME (Type: Text)
+     2. TERRACLIM_PASSWORD (Type: Text)
+   - Set appropriate values
+   - Mark as Required
+
+### Creating Your First Report
+
+1. **Get TerraCLIM Data**:
+   - Click "Get Data"
+   - Choose "Python script"
+   - Copy this basic script:
+     ```python
+     import terraclim as tc
+     
+     # Get fields data
+     df = tc.get_fields(
+         username=TERRACLIM_USERNAME,  # Power BI parameter
+         password=TERRACLIM_PASSWORD   # Power BI parameter
+     )
+     ```
+
+2. **Create Basic Visualizations**:
+   - Table of Fields:
+     - Drag field names to create columns
+     - Add sorting and filtering
+   
+   - Map View (if coordinates available):
+     - Use Map visual
+     - Set latitude and longitude
+   
+   - Summary Cards:
+     - Total fields
+     - Total area
+     - Active fields
+
+3. **Add Refresh Schedule**:
+   - Set up credentials in Power BI service
+   - Configure automatic refresh
+   - Test refresh functionality
+
+### Advanced Features
+
+1. **Combining Multiple Data Sources**:
+   ```python
+   import terraclim as tc
+   
+   # Get both farms and fields
+   farms_df = tc.get_farms(TERRACLIM_USERNAME, TERRACLIM_PASSWORD)
+   fields_df = tc.get_fields(TERRACLIM_USERNAME, TERRACLIM_PASSWORD)
+   
+   # Merge data
+   df = fields_df.merge(
+       farms_df[['farm_id', 'farm_name']], 
+       on='farm_id', 
+       how='left'
+   )
+   ```
+
+2. **Adding GeoServer Layers**:
+   ```python
+   import terraclim as tc
+   
+   # Get available layers
+   workspaces = tc.get_workspaces(TERRACLIM_USERNAME, TERRACLIM_PASSWORD)
+   
+   # Get specific workspace info
+   workspace_info = tc.get_geoserver_info(
+       TERRACLIM_USERNAME,
+       TERRACLIM_PASSWORD,
+       workspace='TerraClim_Terrain'
+   )
+   ```
+
+### Troubleshooting
+
+1. **Common Issues**:
+   - "Module not found" error:
+     - Verify Python path in Power BI settings
+     - Check package installation
+   
+   - Authentication errors:
+     - Verify credentials
+     - Check network connectivity
+   
+   - Empty data:
+     - Check parameter values
+     - Verify API access
+
+2. **Getting Help**:
+   - Check logs at: `%TEMP%\terraclim_powerbi.log`
+   - Contact support: support@terraclim.co.za
+   - Review error messages in Power BI
+
+3. **Version Verification**:
+   ```python
+   import terraclim as tc
+   version_info = tc.get_version_info()
+   print(version_info)  # Shows versions of all components
+   ```
 
 ## Installation
 

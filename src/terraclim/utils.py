@@ -137,13 +137,10 @@ def handle_error_response(response):
         return False, "Authentication service temporarily unavailable"
         
     if response.ok:
-        # For successful responses, verify it's a GeoJSON FeatureCollection
-        if isinstance(data, dict):
-            if data.get('type') == 'FeatureCollection':
-                return True, None
-            else:
-                return False, "Response is not a GeoJSON FeatureCollection"
-        return True, None
+        # For successful responses, verify it's a JSON object or array
+        if isinstance(data, (dict, list)):
+            return True, None
+        return False, "Invalid response format"
     
     # Handle error responses
     if isinstance(data, dict):

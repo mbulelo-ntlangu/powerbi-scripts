@@ -1,17 +1,14 @@
 # Setting up TerraCLIM Scripts in Power BI
 
-## Prerequisites
+## Quick Start Guide
 
 ### Required Software
-1. Python 3.7 or higher installed on your system
-   - Download from [python.org](https://www.python.org/downloads/)
-   - During installation, check "Add Python to PATH"
+1. Python 3.11 (standard installation, NOT Windows Store version)
+   - Download from [python.org](https://www.python.org/downloads/release/python-3118/)
+   - Install to `C:\PowerBI_Python`
+   - Do NOT check "Add Python to PATH"
    
-2. pip (Python package installer)
-   - Usually comes with Python
-   - Verify with: `pip --version`
-   
-3. Power BI Desktop
+2. Power BI Desktop
    - Download from [Microsoft Store](https://www.microsoft.com/store/productId/9NTXR16HNW1T)
    - Or [Direct Download](https://powerbi.microsoft.com/desktop/)
 
@@ -19,41 +16,41 @@
 - Windows 10 or higher
 - 4GB RAM minimum (8GB recommended)
 - Internet connection for API access
+- Administrative access (for Python installation)
 
 ## Installation Steps
 
-1. Open PowerShell or Command Prompt as Administrator
+1. Install Python 3.11:
+   - Download Python 3.11 from [python.org](https://www.python.org/downloads/release/python-3118/)
+   - Run installer as Administrator
+   - Choose "Customize installation"
+   - Set installation directory to: `C:\PowerBI_Python`
+   - Do NOT add Python to PATH
+
+2. Install Required Packages:
    ```powershell
-   # Verify Python installation
-   python --version  # Should show 3.7 or higher
-   pip --version    # Verify pip is installed
+   # Open PowerShell as Administrator and run:
+   cd C:\PowerBI_Python
+   .\python.exe -m pip install --upgrade pip
+   .\python.exe -m pip install pandas matplotlib requests python-dotenv
+   
+   # Install TerraCLIM package (adjust path as needed)
+   .\python.exe -m pip install -e "C:\path\to\terraclim\powerbi-scripts"
    ```
 
-2. Set up a virtual environment (recommended):
-   ```powershell
-   # Navigate to a suitable directory
-   cd C:\Users\YourUsername\Documents
-   
-   # Create a new directory for TerraCLIM
-   mkdir TerraCLIM
-   cd TerraCLIM
-   
-   # Create virtual environment
-   python -m venv .venv
-   
-   # Activate virtual environment
-   .\.venv\Scripts\Activate.ps1
-   ```
+3. Configure PowerBI:
+   - Open PowerBI Desktop
+   - Go to File → Options and settings → Options
+   - Under Global, select "Python scripting"
+   - Set "Python home directory" to: `C:\PowerBI_Python`
+   - Click OK and restart PowerBI Desktop
 
-3. Install the TerraCLIM package:
-   ```powershell
-   # Clone the repository (if you haven't already)
-   git clone https://github.com/mbulelo-ntlangu/powerbi-scripts.git
-   cd powerbi-scripts
-   
-   # Install in editable mode
-   pip install -e .
-   ```
+4. Create PowerBI Parameters:
+   - In PowerBI Desktop, go to Transform data → Manage Parameters
+   - Create these parameters:
+     - `TERRACLIM_USERNAME` (Type: Text)
+     - `TERRACLIM_PASSWORD` (Type: Text)
+     - `TERRACLIM_BASE_URL` (Type: Text, optional)
 
 4. Verify the installation:
    ```python
@@ -72,21 +69,25 @@
 
 ### Basic Usage
 
-1. In Power BI Desktop:
-   - Click "Get Data"
-   - Select "Python script"
-   - Enter the following script:
-
+1. Test the Setup:
+   - In Power BI Desktop, click "Get Data" → "Python script"
+   - Copy and paste this minimal test:
    ```python
-   import terraclim as tc
-
-   # Get data (replace with your credentials)
-   username = "your_username"
-   password = "your_password"
-
-   # Get fields data
-   df = tc.get_fields(username, password)
+   import pandas as pd
+   
+   # Create a simple test DataFrame
+   df = pd.DataFrame({
+       'test': ['Simple Test'],
+       'result': ['Success']
+   })
    ```
+
+2. Import TerraCLIM Data:
+   - Click "Get Data" → "Python script"
+   - Copy the contents of `powerbi_farm_fields.py`
+   - Click OK
+
+The script will automatically use your PowerBI parameters for authentication.
 
 ### Advanced Usage Examples
 
@@ -152,14 +153,31 @@
 
 ### Common Issues and Solutions
 
-1. Import Errors
+1. "Access Denied" Error:
+   ```
+   ADO.NET: A problem occurred while processing your Python script.
+   Here are the technical details: Access is denied
+   ```
+   Solutions:
+   - Make sure you're using standard Python (not Windows Store version)
+   - Verify Python is installed in `C:\PowerBI_Python`
+   - Run all pip commands as administrator
+   - Try the test scripts in this order:
+     1. `test_minimal.py` (basic pandas test)
+     2. `test_matplotlib.py` (matplotlib test)
+     3. `test_powerbi_import.py` (TerraCLIM test)
+
+2. Import Errors
    ```
    Error: No module named 'terraclim'
    ```
    Solutions:
-   - Verify installation: `pip list | findstr terraclim`
-   - Check Python path: `python -c "import sys; print(sys.path)"`
-   - Reinstall package: `pip install -e .`
+   - Open PowerShell as admin and run:
+     ```powershell
+     cd C:\PowerBI_Python
+     .\python.exe -m pip list  # Check installed packages
+     .\python.exe -m pip install -e "path/to/terraclim/powerbi-scripts"  # Reinstall
+     ```
 
 2. Authentication Errors
    ```

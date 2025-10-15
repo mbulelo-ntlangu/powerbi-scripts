@@ -5,7 +5,7 @@ Module for retrieving analysis statistics from TerraCLIM API.
 import requests
 import pandas as pd
 from datetime import datetime, timedelta
-from typing import List, Optional, Union
+from typing import Optional
 from .auth import TerraCLIMAuth
 from .utils import get_api_url, response_to_dataframe, handle_error_response, format_date
 
@@ -21,43 +21,32 @@ class AnalysisStats:
         if not self.auth.is_authenticated():
             raise ValueError("Authentication required. Please login first.")
 
-    def get_analysis_stats(self, start_date: Optional[str] = None, 
-                         end_date: Optional[str] = None,
-                         field_ids: int = None) -> Optional[pd.DataFrame]:
+    def get_analysis_stats(self, field_ids: int = None) -> Optional[pd.DataFrame]:
         """
         Retrieve analysis statistics data.
         
         Args:
-            start_date (str, optional): Start date for analysis (YYYY-MM-DD).
-                                      If not provided, defaults to 60 days ago.
-            end_date (str, optional): End date for analysis (YYYY-MM-DD).
-                                    If not provided, defaults to today.
             field_ids (int): The field ID to analyze. This must be a single integer value.
             
         Returns:
-            pandas.DataFrame: Analysis statistics data
+            pandas.DataFrame: Analysis statistics data containing variable definitions
         """
         if field_ids is None:
             raise ValueError("field_ids parameter is required and must be a single integer value")
             
         endpoint = "analysis-stats/"
         url = get_api_url(endpoint)
-        
-        # Set default dates if not provided
-        if not end_date:
-            end_date = datetime.now().strftime('%Y-%m-%d')
-        if not start_date:
-            start_date = (datetime.strptime(end_date, '%Y-%m-%d') - timedelta(days=60)).strftime('%Y-%m-%d')
             
         params = {
-            'start_date': format_date(start_date),
-            'end_date': format_date(end_date),
             'field_ids': str(field_ids)  # Convert single integer to string
         }
             
         try:
+            # Debug: Print URL and parameters
+            print(f"Debug - URL: {url}")
+            print(f"Debug - Parameters: {params}")
+            print(f"Debug - Headers: {self.auth.get_headers()}")
             
-        try:
             response = requests.get(
                 url,
                 params=params,
@@ -70,7 +59,18 @@ class AnalysisStats:
                 return None
                 
             data = response.json()
-            return response_to_dataframe(data, flatten=True)
+            
+            # Analysis stats response is a dictionary with variables definitions
+            if isinstance(data, dict) and 'variables' in data:
+                # Convert to a DataFrame directly without expecting GeoJSON format
+                variables = data.get('variables', {})
+                df = pd.DataFrame.from_dict(variables, orient='index', columns=['description'])
+                df.index.name = 'variable'
+                df.reset_index(inplace=True)
+                return df
+                
+            print("Error getting analysis stats: Unexpected response format")
+            return None
             
         except requests.exceptions.RequestException as e:
             print(f"Failed to retrieve analysis stats: {str(e)}")
@@ -93,14 +93,13 @@ Commands:
 Options for 'get' command:
     --start-date DATE      Start date (YYYY-MM-DD)
     --end-date DATE       End date (YYYY-MM-DD)
-    --fields IDS          Comma-separated list of field IDs (e.g., 1,2,3)
+    --fields ID           Single field ID to analyze
     --output FILE         Output CSV filename (default: analysis_stats.csv)
 
 Examples:
-    python analysis_stats.py get
-    python analysis_stats.py get --start-date 2025-01-01 --end-date 2025-12-31
-    python analysis_stats.py get --fields 1,2,3
-    python analysis_stats.py get --output custom_stats.csv
+    python analysis_stats.py get --fields 1
+    python analysis_stats.py get --start-date 2025-01-01 --end-date 2025-12-31 --fields 1
+    python analysis_stats.py get --fields 1 --output custom_stats.csv
     """)
 
 def main():
@@ -143,7 +142,7 @@ def main():
                 elif args[i] == '--end-date':
                     end_date = args[i + 1]
                 elif args[i] == '--fields':
-                    field_ids = [int(f.strip()) for f in args[i + 1].split(',')]
+                    field_ids = int(args[i + 1])
                 elif args[i] == '--output':
                     output_file = args[i + 1]
 

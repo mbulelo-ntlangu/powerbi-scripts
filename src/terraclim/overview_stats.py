@@ -18,30 +18,27 @@ class OverviewStats:
         if not self.auth.is_authenticated():
             raise ValueError("Authentication required. Please login first.")
 
-    def get_overview_stats(self, start_date=None, end_date=None, field_id=None, farm_id=None):
+    def get_overview_stats(self, farm_id=None, field_id=None):
         """
         Retrieve overview statistics data.
         
         Args:
-            start_date (str, optional): Start date for statistics (YYYY-MM-DD)
-            end_date (str, optional): End date for statistics (YYYY-MM-DD)
-            field_id (int, optional): Filter by field ID
-            farm_id (int, optional): Filter by farm ID
+            farm_id (int): Filter by farm ID. Required if field_id is not provided.
+            field_id (int, optional): Filter by field ID. If provided, must be a field within the farm.
             
         Returns:
             pandas.DataFrame: Overview statistics data
         """
+        if farm_id is None and field_id is None:
+            raise ValueError("Either farm_id or field_id must be provided")
+            
         endpoint = "overview-stats/"
         url = get_api_url(endpoint)
         
         params = {}
-        if start_date:
-            params['start_date'] = format_date(start_date)
-        if end_date:
-            params['end_date'] = format_date(end_date)
-        if field_id:
+        if field_id is not None:
             params['fieldID'] = field_id
-        if farm_id:
+        if farm_id is not None:
             params['farm_id'] = farm_id
             
         try:

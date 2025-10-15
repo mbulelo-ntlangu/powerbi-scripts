@@ -28,11 +28,12 @@ package_dir = Path(__file__).parent.parent
 if str(package_dir) not in sys.path:
     sys.path.insert(0, str(package_dir))
 
-from auth import TerraCLIMAuth
-from geoserver_info import GeoServerInfo
-from fields import FieldInfo
-from farms import FarmInfo
-from field_notes import FieldNotes
+from .auth import TerraCLIMAuth
+from .geoserver_info import GeoServerInfo
+from .fields import Fields
+from .farms import Farms
+from .field_notes import FieldNotes
+from .farm_portions import FarmPortions
 
 class TerraCLIMError(Exception):
     """Base exception for TerraCLIM errors"""
@@ -134,7 +135,7 @@ def get_fields(username=None, password=None):
     if not auth_client.login(username, password):
         return pd.DataFrame()
         
-    client = FieldInfo(auth_client)
+    client = Fields(auth_client)
     return client.get_fields()
 
 def get_farms(username=None, password=None):
@@ -152,7 +153,7 @@ def get_farms(username=None, password=None):
     if not auth_client.login(username, password):
         return pd.DataFrame()
         
-    client = FarmInfo(auth_client)
+    client = Farms(auth_client)
     return client.get_farms()
 
 def get_field_notes(username=None, password=None, field_id=None):
@@ -175,6 +176,53 @@ def get_field_notes(username=None, password=None, field_id=None):
     if field_id:
         return client.get_field_notes(field_id)
     return client.get_all_notes()
+
+@handle_api_error
+def get_farm_portions(username=None, password=None, farm_id=None, extent=None):
+    """
+    Get farm portions data, optionally filtered by farm ID and/or geographic extent.
+    
+    Args:
+        username (str, optional): TerraCLIM username
+        password (str, optional): TerraCLIM password
+        farm_id (int, optional): Filter portions by farm ID
+        extent (list, optional): Bounding box coordinates [minx, miny, maxx, maxy].
+                               Example: [2086038.1755925221, -4033790.723493586, 
+                                       2112561.824407478, -4007477.276506414]
+        
+    Returns:
+        pandas.DataFrame: Farm portions data
+    
+    Examples:
+        >>> # In Power BI, create these parameters:
+        >>> # EXTENT_MINX (number)
+        >>> # EXTENT_MINY (number)
+        >>> # EXTENT_MAXX (number)
+        >>> # EXTENT_MAXY (number)
+        
+        >>> # Then use in your script:
+        >>> extent = [EXTENT_MINX, EXTENT_MINY, EXTENT_MAXX, EXTENT_MAXY]
+        >>> df = tc.get_farm_portions(
+        ...     username=TERRACLIM_USERNAME,
+        ...     password=TERRACLIM_PASSWORD,
+        ...     extent=extent
+        ... )
+    """
+    auth_client = TerraCLIMAuth()
+    if not auth_client.login(username, password):
+        raise AuthenticationError("Failed to authenticate with provided credentials")
+        
+    client = FarmPortions(auth_client)
+    df = client.get_farm_portions(farm_id=farm_id, extent=extent)
+    
+    try:
+        required_columns = ['portion_id', 'farm_id']  # Add other required columns
+        validate_dataframe(df, required_columns)
+        logger.info(f"Successfully retrieved {len(df)} farm portions")
+        return df
+    except DataValidationError as e:
+        logger.error(f"Data validation error: {str(e)}")
+        raise APIError(f"Invalid farm portions data returned: {str(e)}")
 
 def get_geoserver_info(username=None, password=None, workspace=None):
     """

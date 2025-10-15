@@ -38,7 +38,7 @@ class TerraCLIMAuth:
         if not username or not password:
             raise ValueError("Username and password must be provided either as arguments or environment variables")
 
-        login_url = f"{self.base_url}/api/v0/users/login/"
+        login_url = f"{self.base_url}/api/token/"
         
         try:
             response = requests.post(
@@ -49,16 +49,31 @@ class TerraCLIMAuth:
                 },
                 headers=self.headers
             )
-            response.raise_for_status()
+            
+            # Check if response contains valid JSON data
+            try:
+                data = response.json()
+            except ValueError:
+                print(f"Invalid JSON response: {response.text}")
+                return False
+
+            # Check response status
+            if not response.ok:
+                error_msg = data.get('detail') if isinstance(data, dict) else str(data)
+                print(f"Login failed: {error_msg}")
+                return False
             
             # Extract tokens from response
-            tokens = response.json()
-            self.access_token = tokens.get('access')
-            self.refresh_token = tokens.get('refresh')
+            if isinstance(data, dict):
+                self.access_token = data.get('access')
+                self.refresh_token = data.get('refresh')
 
-            if self.access_token:
-                self.headers['Authorization'] = f'Bearer {self.access_token}'
-                return True
+                if self.access_token:
+                    self.headers['Authorization'] = f'Bearer {self.access_token}'
+                    return True
+                else:
+                    print("No access token in response")
+                    return False
                 
         except requests.exceptions.RequestException as e:
             print(f"Login failed: {str(e)}")

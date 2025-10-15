@@ -8,25 +8,32 @@ import pandas as pd
 
 # API Constants
 BASE_URL = "https://dashboard.staging.terraclim.co.za"
-API_VERSION = "v0"
+API_VERSION = os.getenv('TERRACLIM_API_VERSION', 'v0')
 
-def get_api_url(endpoint):
+def get_api_url(endpoint, versioned=True):
     """
     Construct full API URL for a given endpoint.
     
     Args:
         endpoint (str): API endpoint path
+        versioned (bool): Whether to include API version in URL
         
     Returns:
         str: Full API URL
     """
     # Remove leading slash if present
     endpoint = endpoint.lstrip('/')
-    return f"{BASE_URL}/api/{API_VERSION}/{endpoint}"
+    
+    # Handle different endpoint types
+    if endpoint.startswith('token'):  # Auth endpoints
+        return f"{BASE_URL}/api/{endpoint}"
+    else:  # All other endpoints are versioned API endpoints
+        return f"{BASE_URL}/api/{API_VERSION}/{endpoint}" if versioned else f"{BASE_URL}/api/{endpoint}"
 
 def response_to_dataframe(response_data, flatten=False):
     """
     Convert API response to pandas DataFrame for PowerBI consumption.
+    Handles both regular JSON and GeoJSON FeatureCollection formats.
     
     Args:
         response_data (dict/list): API response data
@@ -39,6 +46,23 @@ def response_to_dataframe(response_data, flatten=False):
         return pd.DataFrame()
     
     try:
+        # Handle GeoJSON FeatureCollection format
+        if isinstance(response_data, dict) and response_data.get('type') == 'FeatureCollection':
+            features = response_data.get('features', [])
+            records = []
+            for feature in features:
+                record = {
+                    'id': feature.get('id'),
+                    'type': feature.get('type'),
+                    'geometry': feature.get('geometry'),
+                }
+                # Add properties if they exist
+                if 'properties' in feature:
+                    record.update(feature['properties'])
+                records.append(record)
+            return pd.DataFrame(records)
+        
+        # Handle regular JSON responses
         if isinstance(response_data, dict):
             if flatten:
                 df = pd.json_normalize([response_data])
@@ -91,14 +115,52 @@ def handle_error_response(response):
     Returns:
         tuple: (bool, str) - (Success status, Error message if any)
     """
-    if response.ok:
-        return True, None
+    print(f"Response Status: {response.status_code}")
+    print(f"Response Headers: {response.headers}")
+    print(f"Response Text: {response.text[:500]}...")  # Show first 500 chars
+    
+    content_type = response.headers.get('content-type', '')
+    
+    # First check if response is HTML
+    if 'text/html' in content_type:
+        return False, "Received HTML response instead of JSON"
+    
+    # Try to parse response as JSON
+    try:
+        data = response.json()
+    except ValueError:
+        return False, "Invalid JSON response"
+
+    # Check for server-side AttributeError about 'user'
+    if isinstance(data, dict) and any(k.startswith("<class 'AttributeError'>") for k in data.keys()):
+        print("Server error: Authentication service unavailable")
+        return False, "Authentication service temporarily unavailable"
         
-    error_msg = "Unknown error"
+    if response.ok:
+        # For successful responses, verify it's a GeoJSON FeatureCollection
+        if isinstance(data, dict):
+            if data.get('type') == 'FeatureCollection':
+                return True, None
+            else:
+                return False, "Response is not a GeoJSON FeatureCollection"
+        return True, None
+    
+    # Handle error responses
+    if isinstance(data, dict):
+        error_msg = data.get('detail', str(data))
+    else:
+        error_msg = str(data)
+    
+    return False, error_msg
     try:
         error_data = response.json()
         if isinstance(error_data, dict):
-            error_msg = error_data.get('detail', error_data.get('message', str(error_data)))
+            # Check for error details in various formats
+            error_msg = error_data.get('detail') or error_data.get('message') or error_data.get('error')
+            if not error_msg and any(isinstance(v, dict) for v in error_data.values()):
+                # If we have nested error objects, combine their messages
+                error_msg = ", ".join(str(v) for v in error_data.values() if v)
+            error_msg = error_msg or str(error_data)
         else:
             error_msg = str(error_data)
     except:

@@ -6,8 +6,8 @@ import requests
 import pandas as pd
 from datetime import datetime, timedelta
 from typing import List, Optional, Union
-from auth import TerraCLIMAuth
-from utils import get_api_url, response_to_dataframe, handle_error_response, format_date
+from .auth import TerraCLIMAuth
+from .utils import get_api_url, response_to_dataframe, handle_error_response, format_date
 
 class AnalysisStats:
     def __init__(self, auth_client=None):
@@ -23,7 +23,7 @@ class AnalysisStats:
 
     def get_analysis_stats(self, start_date: Optional[str] = None, 
                          end_date: Optional[str] = None,
-                         field_ids: Optional[Union[List[int], int]] = None) -> Optional[pd.DataFrame]:
+                         field_ids: int = None) -> Optional[pd.DataFrame]:
         """
         Retrieve analysis statistics data.
         
@@ -32,11 +32,14 @@ class AnalysisStats:
                                       If not provided, defaults to 60 days ago.
             end_date (str, optional): End date for analysis (YYYY-MM-DD).
                                     If not provided, defaults to today.
-            field_ids (Union[List[int], int], optional): List of field IDs or single field ID to analyze
+            field_ids (int): The field ID to analyze. This must be a single integer value.
             
         Returns:
             pandas.DataFrame: Analysis statistics data
         """
+        if field_ids is None:
+            raise ValueError("field_ids parameter is required and must be a single integer value")
+            
         endpoint = "analysis-stats/"
         url = get_api_url(endpoint)
         
@@ -48,15 +51,11 @@ class AnalysisStats:
             
         params = {
             'start_date': format_date(start_date),
-            'end_date': format_date(end_date)
+            'end_date': format_date(end_date),
+            'field_ids': str(field_ids)  # Convert single integer to string
         }
-        
-        # Handle field_ids parameter
-        if field_ids is not None:
-            if isinstance(field_ids, (list, tuple)):
-                params['field_id'] = ','.join(map(str, field_ids))
-            else:
-                params['field_id'] = str(field_ids)
+            
+        try:
             
         try:
             response = requests.get(

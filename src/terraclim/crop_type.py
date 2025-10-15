@@ -3,8 +3,8 @@ Module for retrieving crop type data from TerraCLIM API.
 """
 
 import requests
-from auth import TerraCLIMAuth
-from utils import get_api_url, response_to_dataframe, handle_error_response
+from .auth import TerraCLIMAuth
+from .utils import get_api_url, response_to_dataframe, handle_error_response
 
 class CropType:
     def __init__(self, auth_client=None):

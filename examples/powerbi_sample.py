@@ -27,22 +27,47 @@ try:
     if 'error' in workspaces_df.columns:
         df = workspaces_df  # Return error DataFrame
     else:
-        # Get farms data
-        farms_df = tc.get_farms(username, password)
-        if 'error' in farms_df.columns:
-            df = farms_df
+        # Get farms data with extent filter
+        # These would be Power BI parameters
+        extent = [
+            2086038.1755925221,  # EXTENT_MINX
+            -4033790.723493586,  # EXTENT_MINY
+            2112561.824407478,   # EXTENT_MAXX
+            -4007477.276506414   # EXTENT_MAXY
+        ]
+        
+        # Get farm portions in the specified extent
+        portions_df = tc.get_farm_portions(username, password, extent=extent)
+        if 'error' in portions_df.columns:
+            df = portions_df
         else:
-            # Get fields data
-            fields_df = tc.get_fields(username, password)
-            if 'error' in fields_df.columns:
-                df = fields_df
+            # Get farms data for these portions
+            farm_ids = portions_df['farm_id'].unique().tolist()
+            farms_df = tc.get_farms(username, password)
+            if 'error' in farms_df.columns:
+                df = farms_df
             else:
-                # Combine the data
-                df = fields_df.merge(
-                    farms_df[['farm_id', 'farm_name', 'farm_area']], 
-                    on='farm_id', 
-                    how='left'
-                )
+                # Filter farms to those in our extent
+                farms_df = farms_df[farms_df['farm_id'].isin(farm_ids)]
+                
+                # Get fields data
+                fields_df = tc.get_fields(username, password)
+                if 'error' in fields_df.columns:
+                    df = fields_df
+                else:
+                    # Filter fields to farms in our extent
+                    fields_df = fields_df[fields_df['farm_id'].isin(farm_ids)]
+                    
+                    # Combine all the data
+                    df = fields_df.merge(
+                        farms_df[['farm_id', 'farm_name', 'farm_area']], 
+                        on='farm_id', 
+                        how='left'
+                    ).merge(
+                        portions_df[['farm_id', 'portion_id', 'area']], 
+                        on='farm_id',
+                        how='left'
+                    )
                 
                 # Add workspace information if applicable
                 if not workspaces_df.empty:

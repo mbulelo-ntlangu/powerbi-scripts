@@ -3,8 +3,8 @@ Module for retrieving overview statistics from TerraCLIM API.
 """
 
 import requests
-from auth import TerraCLIMAuth
-from utils import get_api_url, response_to_dataframe, handle_error_response, format_date
+from .auth import TerraCLIMAuth
+from .utils import get_api_url, response_to_dataframe, handle_error_response, format_date
 
 class OverviewStats:
     def __init__(self, auth_client=None):
@@ -40,7 +40,7 @@ class OverviewStats:
         if end_date:
             params['end_date'] = format_date(end_date)
         if field_id:
-            params['field_id'] = field_id
+            params['fieldID'] = field_id
         if farm_id:
             params['farm_id'] = farm_id
             
@@ -63,33 +63,7 @@ class OverviewStats:
             print(f"Failed to retrieve overview stats: {str(e)}")
             return None
 
-    def get_summary(self):
-        """
-        Retrieve summary overview statistics.
-        
-        Returns:
-            pandas.DataFrame: Summary statistics data
-        """
-        endpoint = "overview-stats/summary/"
-        url = get_api_url(endpoint)
-        
-        try:
-            response = requests.get(
-                url,
-                headers=self.auth.get_headers()
-            )
-            
-            success, error_msg = handle_error_response(response)
-            if not success:
-                print(f"Error getting overview summary: {error_msg}")
-                return None
-                
-            data = response.json()
-            return response_to_dataframe([data])  # Wrap in list for DataFrame
-            
-        except requests.exceptions.RequestException as e:
-            print(f"Failed to retrieve overview summary: {str(e)}")
-            return None
+    
 
 def main():
     """

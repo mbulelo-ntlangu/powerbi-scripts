@@ -9,13 +9,19 @@ This directory contains example files demonstrating how to use the TerraCLIM pac
    - Shows proper error handling and parameter usage
    - Demonstrates data merging and cleanup
 
-2. `test_terraclim_components.py`
+2. `powerbi_functions_test.py`
+   - Tests all PowerBI wrapper functions
+   - Verifies function accessibility and execution
+   - Shows how to use wrapper functions in PowerBI
+   - Example of simplified PowerBI integration
+
+3. `test_terraclim_components.py`
    - Comprehensive test script for all TerraCLIM components
    - Tests authentication, farms, fields, and statistics
    - Provides detailed status information for each component
    - Useful for validating setup and troubleshooting
 
-3. `powerbi_sample.py`
+4. `powerbi_sample.py`
    - Simple example showing basic TerraCLIM integration
    - Shows proper error handling
    - Demonstrates data merging

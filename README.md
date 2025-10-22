@@ -114,9 +114,43 @@ Before you begin, ensure you have:
    - Configure automatic refresh
    - Test refresh functionality
 
+### PowerBI Wrapper Functions
+
+The package provides simple wrapper functions specifically designed for PowerBI integration:
+
+```python
+from terraclim import get_farms, get_fields, get_workspaces, get_field_notes, get_geoserver_info
+
+# Get farms data using PowerBI parameters
+farms_df = get_farms(
+    username=TERRACLIM_USERNAME,  # PowerBI parameter
+    password=TERRACLIM_PASSWORD   # PowerBI parameter
+)
+
+# Get fields data
+fields_df = get_fields(
+    username=TERRACLIM_USERNAME,
+    password=TERRACLIM_PASSWORD
+)
+
+# Merge the data
+df = fields_df.merge(
+    farms_df[['farm_id', 'farm_name']],
+    on='farm_id',
+    how='left'
+)
+```
+
+These wrapper functions:
+- Take username/password directly from PowerBI parameters
+- Handle authentication automatically
+- Return pandas DataFrames ready for PowerBI
+- Include proper error handling
+- Don't require separate authentication steps
+
 ### Advanced Features
 
-1. **Combining Multiple Data Sources**:
+1. **Combining Multiple Data Sources (Using Classes)**:
    ```python
    from terraclim import TerraCLIMAuth, Farms, Fields
    

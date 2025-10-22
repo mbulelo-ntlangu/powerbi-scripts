@@ -34,6 +34,31 @@ Before you begin, ensure you have:
 
 ### Installation Steps
 
+There are two ways to install the TerraCLIM package:
+
+#### Option 1: Using the Installation Script
+
+1. **Download and Run the Installation Script**:
+   ```powershell
+   # Clone the repository
+   git clone https://github.com/mbulelo-ntlangu/powerbi-scripts.git
+   cd powerbi-scripts
+   
+   # Install in the current Python environment
+   python install_terraclim.py
+   
+   # Or specify a different Python installation
+   python install_terraclim.py --python "C:\PowerBI_Python\python.exe"
+   ```
+
+The installation script will:
+- Install required build dependencies
+- Build the package
+- Install or update the package in the specified Python environment
+- Verify the installation
+
+#### Option 2: Manual Installation
+
 1. **Set up Python Environment**:
    ```powershell
    # Create a dedicated directory

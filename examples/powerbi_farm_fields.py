@@ -52,10 +52,8 @@ except NameError:
     username = os.getenv('TERRACLIM_USERNAME', '')
     password = os.getenv('TERRACLIM_PASSWORD', '')
 
-# Now import TerraCLIM modules
-from terraclim.auth import TerraCLIMAuth
-from terraclim.farms import Farms
-from terraclim.fields import Fields
+# Import TerraCLIM classes
+from terraclim import TerraCLIMAuth, Farms, Fields
 
 def get_error_df(error_message):
     """Create a DataFrame for error display"""

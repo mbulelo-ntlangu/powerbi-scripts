@@ -31,12 +31,11 @@ except NameError:
     print(f"\nUsername found: {'yes' if username else 'no'}")
     print(f"Password found: {'yes' if password else 'no'}")
 
-    # Import TerraCLIM modules one by one
-    from terraclim.auth import TerraCLIMAuth
-    from terraclim.farms import Farms
-    from terraclim.fields import Fields
-    from terraclim.overview_stats import OverviewStats
-    from terraclim.analysis_stats import AnalysisStats
+    # Import TerraCLIM classes
+    from terraclim import (
+        TerraCLIMAuth, Farms, Fields,
+        OverviewStats, AnalysisStats
+    )
     
     # Initialize authentication
     auth = TerraCLIMAuth()

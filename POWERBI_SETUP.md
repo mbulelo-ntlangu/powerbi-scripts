@@ -1,4 +1,4 @@
-# Setting up TerraCLIM Scripts in Power BI
+git merge main# Setting up TerraCLIM Scripts in Power BI
 
 ## Quick Start Guide
 
@@ -93,39 +93,69 @@ The script will automatically use your PowerBI parameters for authentication.
 
 1. Getting Farm Information with Error Handling:
    ```python
-   import terraclim as tc
+   from terraclim import TerraCLIMAuth, Farms
    import pandas as pd
 
    try:
-       df = tc.get_farms(username, password)
-       if df.empty:
-           df = pd.DataFrame({'Error': ['No farms found or authentication failed']})
+       # Initialize authentication
+       auth = TerraCLIMAuth()
+       login_result = auth.login(
+           username=TERRACLIM_USERNAME,  # Power BI parameter
+           password=TERRACLIM_PASSWORD   # Power BI parameter
+       )
+
+       if not login_result:
+           df = pd.DataFrame({'Error': ['Authentication failed']})
+       else:
+           # Get farms data
+           farms_client = Farms(auth)
+           df = farms_client.get_farms()
+           if df.empty:
+               df = pd.DataFrame({'Error': ['No farms found']})
    except Exception as e:
        df = pd.DataFrame({'Error': [str(e)]})
    ```
 
 2. Combining Multiple Data Sources:
    ```python
-   import terraclim as tc
-
-   # Get both farms and fields
-   farms_df = tc.get_farms(username, password)
-   fields_df = tc.get_fields(username, password)
-
+   from terraclim import TerraCLIMAuth, Farms, Fields
+   
+   # Initialize authentication
+   auth = TerraCLIMAuth()
+   auth.login(
+       username=TERRACLIM_USERNAME,  # Power BI parameter
+       password=TERRACLIM_PASSWORD   # Power BI parameter
+   )
+   
+   # Get both farms and fields data
+   farms_client = Farms(auth)
+   fields_client = Fields(auth)
+   
+   farms_df = farms_client.get_farms()
+   fields_df = fields_client.get_fields()
+   
    # Merge the data
    df = fields_df.merge(farms_df, on='farm_id', how='left')
    ```
 
 3. Working with GeoServer Data:
    ```python
-   import terraclim as tc
+   from terraclim import TerraCLIMAuth
+   from terraclim import get_workspaces, get_geoserver_info
+
+   # Initialize authentication
+   auth = TerraCLIMAuth()
+   auth.login(
+       username=TERRACLIM_USERNAME,  # Power BI parameter
+       password=TERRACLIM_PASSWORD   # Power BI parameter
+   )
 
    # Get available workspaces
-   workspaces_df = tc.get_workspaces(username, password)
+   workspaces_df = get_workspaces(auth)
 
    # Get info for a specific workspace
    workspace_name = workspaces_df.iloc[0]['name']  # First workspace
-   info_df = tc.get_geoserver_info(username, password, workspace_name)
+   info_df = get_geoserver_info(auth, workspace_name)
    ```
 
 2. Using Power BI Parameters for Credentials:

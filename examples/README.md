@@ -4,8 +4,19 @@ This directory contains example files demonstrating how to use the TerraCLIM pac
 
 ## Sample Files
 
-1. `powerbi_sample.py`
-   - Basic script for retrieving and combining TerraCLIM data
+1. `powerbi_farm_fields.py`
+   - Basic script for retrieving and combining farm and field data
+   - Shows proper error handling and parameter usage
+   - Demonstrates data merging and cleanup
+
+2. `test_terraclim_components.py`
+   - Comprehensive test script for all TerraCLIM components
+   - Tests authentication, farms, fields, and statistics
+   - Provides detailed status information for each component
+   - Useful for validating setup and troubleshooting
+
+3. `powerbi_sample.py`
+   - Simple example showing basic TerraCLIM integration
    - Shows proper error handling
    - Demonstrates data merging
 
@@ -19,12 +30,16 @@ This directory contains example files demonstrating how to use the TerraCLIM pac
 3. Get Python Data:
    - Click "Get Data"
    - Choose "Python script"
-   - Copy the contents of `powerbi_sample.py`
-   - Replace the username/password placeholders with your parameter names:
+   - Choose one of our example scripts:
+     - `powerbi_farm_fields.py` for basic farm/field data
+     - `test_terraclim_components.py` to validate your setup
+   - The scripts will automatically use your PowerBI parameters:
      ```python
-     username = TERRACLIM_USERNAME  # Power BI will inject the parameter value
-     password = TERRACLIM_PASSWORD  # Power BI will inject the parameter value
+     # Parameters are automatically injected by PowerBI
+     username = TERRACLIM_USERNAME
+     password = TERRACLIM_PASSWORD
      ```
+   - Our example scripts include proper error handling and parameter validation
 
 4. Create Visualizations:
    - Table of fields with farm information

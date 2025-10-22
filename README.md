@@ -81,13 +81,18 @@ Before you begin, ensure you have:
    - Choose "Python script"
    - Copy this basic script:
      ```python
-     import terraclim as tc
+     from terraclim import TerraCLIMAuth, Fields
      
-     # Get fields data
-     df = tc.get_fields(
+     # Initialize authentication
+     auth = TerraCLIMAuth()
+     auth.login(
          username=TERRACLIM_USERNAME,  # Power BI parameter
          password=TERRACLIM_PASSWORD   # Power BI parameter
      )
+     
+     # Get fields data
+     fields_client = Fields(auth)
+     df = fields_client.get_fields()
      ```
 
 2. **Create Basic Visualizations**:
@@ -113,11 +118,21 @@ Before you begin, ensure you have:
 
 1. **Combining Multiple Data Sources**:
    ```python
-   import terraclim as tc
+   from terraclim import TerraCLIMAuth, Farms, Fields
    
-   # Get both farms and fields
-   farms_df = tc.get_farms(TERRACLIM_USERNAME, TERRACLIM_PASSWORD)
-   fields_df = tc.get_fields(TERRACLIM_USERNAME, TERRACLIM_PASSWORD)
+   # Initialize authentication
+   auth = TerraCLIMAuth()
+   auth.login(
+       username=TERRACLIM_USERNAME,  # Power BI parameter
+       password=TERRACLIM_PASSWORD   # Power BI parameter
+   )
+   
+   # Get both farms and fields data
+   farms_client = Farms(auth)
+   fields_client = Fields(auth)
+   
+   farms_df = farms_client.get_farms()
+   fields_df = fields_client.get_fields()
    
    # Merge data
    df = fields_df.merge(
@@ -129,15 +144,22 @@ Before you begin, ensure you have:
 
 2. **Adding GeoServer Layers**:
    ```python
-   import terraclim as tc
+   from terraclim import TerraCLIMAuth
+   from terraclim import get_workspaces, get_geoserver_info
+   
+   # Initialize authentication
+   auth = TerraCLIMAuth()
+   auth.login(
+       username=TERRACLIM_USERNAME,  # Power BI parameter
+       password=TERRACLIM_PASSWORD   # Power BI parameter
+   )
    
    # Get available layers
-   workspaces = tc.get_workspaces(TERRACLIM_USERNAME, TERRACLIM_PASSWORD)
+   workspaces = get_workspaces(auth)
    
    # Get specific workspace info
-   workspace_info = tc.get_geoserver_info(
-       TERRACLIM_USERNAME,
-       TERRACLIM_PASSWORD,
+   workspace_info = get_geoserver_info(
+       auth,
        workspace='TerraClim_Terrain'
    )
    ```
